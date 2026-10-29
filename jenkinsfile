@@ -1,4 +1,4 @@
-pipeline {
+ppipeline {
     agent any
 
     tools {
@@ -9,13 +9,28 @@ pipeline {
         stage('Build') {
             steps {
                 bat 'mvn clean package'
+                archiveArtifacts artifacts: '**/*.war'
             }
         }
-    }
 
-    post {
-        success {
-            archiveArtifacts artifacts: '**/*.war'
+        stage('Deploy to Staging') {
+            steps {
+                build job: 'deploy-application-staging'
+            }
+        }
+
+        stage('Approve Production') {
+            steps {
+                timeout(time: 5, unit: 'DAYS') {
+                    input message: 'Approve production deployment?'
+                }
+            }
+        }
+
+        stage('Deploy to Production') {
+            steps {
+                build job: 'deploy-application-production'
+            }
         }
     }
 }
